@@ -10,10 +10,12 @@ import (
 )
 
 var database string
+var port string
 
 func main() {
 	flag.StringVar(&database, "database", "memory", "Database name")
-	cfg := config.New(database)
+	flag.StringVar(&port, "port", "8080", "Application port")
+	cfg := config.New(database, port)
 
 	if err := app.Run(cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

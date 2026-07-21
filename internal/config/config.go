@@ -9,15 +9,18 @@ const (
 
 type Config struct {
 	DatabaseType Database
+	Port         string
 }
 
-func New(db string) *Config {
+func New(db, port string) *Config {
+	cfg := &Config{Port: port}
+
 	switch db {
 	case "postgres":
-		return &Config{Postgres}
+		cfg.DatabaseType = Postgres
 	case "memory":
-		return &Config{Memory}
+		cfg.DatabaseType = Memory
 	}
 
-	return &Config{Memory}
+	return cfg
 }
