@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
+	"github.com/Mimist-Illusionard/url-shortener/internal/service"
 )
 
 type Handler struct {
-	repo repository.Repository
+	s *service.Service
 }
 
-func RegisterHandlers(repo repository.Repository) http.Handler {
-	h := &Handler{repo: repo}
+func RegisterHandlers(s *service.Service) http.Handler {
+	h := &Handler{s: s}
 
 	mux := http.NewServeMux()
 
@@ -32,9 +31,9 @@ func (h *Handler) CreateShortLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := domain.NewUrl(req.URL)
-	if err := h.repo.Create(*u); err != nil {
-		http.Error(w, fmt.Errorf("error creating url").Error(), http.StatusInternalServerError)
+	u, err := h.s.CreateShortLink(r.Context(), req.URL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -49,11 +48,11 @@ func (h *Handler) GetShortLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.repo.Get(short)
+	link, err := h.s.GetOriginalLink(r.Context(), short)
 	if err != nil {
-		http.Error(w, fmt.Errorf("error getting url %w").Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, u.Original, http.StatusSeeOther)
+	http.Redirect(w, r, link, http.StatusSeeOther)
 }

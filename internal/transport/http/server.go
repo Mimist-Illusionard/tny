@@ -10,6 +10,7 @@ import (
 
 	"github.com/Mimist-Illusionard/url-shortener/internal/config"
 	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
+	"github.com/Mimist-Illusionard/url-shortener/internal/service"
 )
 
 func Serve(cfg *config.Config, r repository.Repository) error {
@@ -21,7 +22,7 @@ func Serve(cfg *config.Config, r repository.Repository) error {
 		IdleTimeout:  time.Second * 60,
 		ReadTimeout:  time.Second * 5,
 		WriteTimeout: time.Second * 5,
-		Handler:      RegisterHandlers(r),
+		Handler:      RegisterHandlers(service.NewService(r)),
 	}
 
 	go func() {

@@ -1,46 +1,66 @@
 package memory
 
 import (
-	"errors"
+	"context"
 	"sync"
 
 	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
+	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
 )
 
 type MemRepository struct {
-	urls map[string]*domain.URL
-	mu   sync.RWMutex
+	shortUrls map[string]*domain.URL
+	origUrls  map[string]string
+	mu        sync.RWMutex
 }
 
 func New() (*MemRepository, error) {
-	return &MemRepository{urls: make(map[string]*domain.URL)}, nil
+	return &MemRepository{
+		shortUrls: make(map[string]*domain.URL),
+		origUrls:  make(map[string]string)}, nil
 }
 
-func (r *MemRepository) Create(url domain.URL) error {
-	r.mu.RLock()
-	if _, ok := r.urls[url.Short]; ok {
-		return errors.New("url already exists")
-	}
-	r.mu.RUnlock()
-
+func (r *MemRepository) Create(ctx context.Context, url *domain.URL) error {
 	r.mu.Lock()
-	r.urls[url.Short] = &url
-	r.mu.Unlock()
+	defer r.mu.Unlock()
+	if _, ok := r.shortUrls[url.Short]; ok {
+		return repository.ErrExists
+	}
+
+	if _, ok := r.origUrls[url.Original]; ok {
+		return repository.ErrNotUnique
+	}
+
+	r.shortUrls[url.Short] = url
+	r.origUrls[url.Original] = url.Short
+
 	return nil
 }
 
-func (r *MemRepository) Get(short string) (domain.URL, error) {
+func (r *MemRepository) Get(ctx context.Context, short string) (*domain.URL, error) {
 	r.mu.RLock()
-	url, ok := r.urls[short]
+	url, ok := r.shortUrls[short]
 	r.mu.RUnlock()
 	if !ok {
-		return domain.URL{}, errors.New("url not found")
+		return nil, repository.ErrNotFound
 	}
-	return *url, nil
+	return url, nil
 }
 
-func (r *MemRepository) Delete(id string) {
+func (r *MemRepository) GetByOriginal(ctx context.Context, url string) (*domain.URL, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	short, ok := r.origUrls[url]
+	if !ok {
+		return nil, repository.ErrNotFound
+	}
+
+	return r.shortUrls[short], nil
+}
+
+func (r *MemRepository) Delete(ctx context.Context, id string) {
 	r.mu.Lock()
-	delete(r.urls, id)
+	delete(r.shortUrls, id)
 	r.mu.Unlock()
 }

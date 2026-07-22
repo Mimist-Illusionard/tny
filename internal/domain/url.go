@@ -15,16 +15,12 @@ type URL struct {
 }
 
 // NewUrl creates url for future use
-func NewUrl(origURL string) *URL {
+func NewUrl(origURL, shortUrl string) *URL {
 	return &URL{
 		ID:        uuid.New().String(),
 		Original:  origURL,
-		Short:     generateShort(),
+		Short:     shortUrl,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
-}
-
-func generateShort() string {
-	return "aabcs"
 }
