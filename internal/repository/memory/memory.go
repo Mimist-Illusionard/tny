@@ -13,7 +13,7 @@ type MemRepository struct {
 }
 
 func New() (*MemRepository, error) {
-	return &MemRepository{}, nil
+	return &MemRepository{urls: make(map[string]*domain.URL)}, nil
 }
 
 func (r *MemRepository) Create(url domain.URL) error {
@@ -24,7 +24,7 @@ func (r *MemRepository) Create(url domain.URL) error {
 	r.mu.RUnlock()
 
 	r.mu.Lock()
-	r.urls[url.ID] = &url
+	r.urls[url.Short] = &url
 	r.mu.Unlock()
 	return nil
 }

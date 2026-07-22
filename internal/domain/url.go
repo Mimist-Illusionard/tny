@@ -14,8 +14,8 @@ type URL struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
-// New creates url for future use
-func (u *URL) New(origURL string) *URL {
+// NewUrl creates url for future use
+func NewUrl(origURL string) *URL {
 	return &URL{
 		ID:        uuid.New().String(),
 		Original:  origURL,
@@ -26,5 +26,5 @@ func (u *URL) New(origURL string) *URL {
 }
 
 func generateShort() string {
-	return ""
+	return "aabcs"
 }

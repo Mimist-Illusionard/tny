@@ -17,10 +17,11 @@ func Serve(cfg *config.Config, r repository.Repository) error {
 	defer stop()
 
 	s := &http.Server{
-		Addr:         ":" + "8080",
+		Addr:         ":" + cfg.Port,
 		IdleTimeout:  time.Second * 60,
 		ReadTimeout:  time.Second * 5,
 		WriteTimeout: time.Second * 5,
+		Handler:      RegisterHandlers(r),
 	}
 
 	go func() {
@@ -28,6 +29,6 @@ func Serve(cfg *config.Config, r repository.Repository) error {
 		s.Shutdown(context.Background())
 	}()
 
-	log.Printf("http server listening on port :8080")
+	log.Printf("http server listening on port %s", cfg.Port)
 	return s.ListenAndServe()
 }
