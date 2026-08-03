@@ -47,7 +47,7 @@ func (r *MemRepository) Get(ctx context.Context, short string) (*domain.URL, err
 	return url, nil
 }
 
-func (r *MemRepository) GetByOriginal(ctx context.Context, url string) (*domain.URL, error) {
+func (r *MemRepository) GetByOriginalUrl(ctx context.Context, url string) (*domain.URL, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -59,8 +59,12 @@ func (r *MemRepository) GetByOriginal(ctx context.Context, url string) (*domain.
 	return r.shortUrls[short], nil
 }
 
-func (r *MemRepository) Delete(ctx context.Context, id string) {
+func (r *MemRepository) Delete(ctx context.Context, short string) {
 	r.mu.Lock()
-	delete(r.shortUrls, id)
+
+	u := r.shortUrls[short]
+	delete(r.shortUrls, short)
+	delete(r.origUrls, u.Original)
+
 	r.mu.Unlock()
 }

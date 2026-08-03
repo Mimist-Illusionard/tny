@@ -18,9 +18,11 @@ var (
 // Create creates url and saves it
 // Get returns url by its short code
 // Delete removes url from the database
+//
+//go:generate mockgen -source=repository.go -destination=repository_mock.go -package=repository Repository
 type Repository interface {
 	Create(ctx context.Context, url *domain.URL) error
 	Get(ctx context.Context, short string) (*domain.URL, error)
-	GetByOriginal(ctx context.Context, url string) (*domain.URL, error)
-	Delete(ctx context.Context, id string)
+	GetByOriginalUrl(ctx context.Context, url string) (*domain.URL, error)
+	Delete(ctx context.Context, short string)
 }

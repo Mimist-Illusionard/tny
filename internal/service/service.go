@@ -43,7 +43,7 @@ func (s *Service) CreateShortLink(ctx context.Context, url string) (*domain.URL,
 		}
 
 		if errors.Is(err, repository.ErrNotUnique) {
-			return s.repo.GetByOriginal(ctx, url)
+			return s.repo.GetByOriginalUrl(ctx, url)
 		}
 
 		if err != nil {
