@@ -27,7 +27,10 @@ func Serve(cfg *config.Config, r repository.Repository) error {
 
 	go func() {
 		<-ctx.Done()
-		s.Shutdown(context.Background())
+		err := s.Shutdown(context.Background())
+		if err != nil {
+			log.Printf("Shutdown() failed: %v", err)
+		}
 	}()
 
 	log.Printf("http server listening on port %s", cfg.Port)

@@ -36,14 +36,14 @@ func (s *Service) CreateShortLink(ctx context.Context, url string) (*domain.URL,
 			return nil, err
 		}
 
-		u := domain.NewUrl(url, short)
+		u := domain.NewURL(url, short)
 		err = s.repo.Create(ctx, u)
 		if errors.Is(err, repository.ErrExists) {
 			continue
 		}
 
 		if errors.Is(err, repository.ErrNotUnique) {
-			return s.repo.GetByOriginalUrl(ctx, url)
+			return s.repo.GetByOriginalURL(ctx, url)
 		}
 
 		if err != nil {

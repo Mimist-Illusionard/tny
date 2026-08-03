@@ -15,7 +15,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("New() unexpected error: %v", err)
 	}
 
-	url := domain.NewUrl("test", "t")
+	url := domain.NewURL("test", "t")
 	err = r.Create(context.Background(), url)
 	if err != nil {
 		t.Fatalf("Create() unexpected error: %v", err)
@@ -26,7 +26,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("exist url: %v", err)
 	}
 
-	url = domain.NewUrl("test", "unique")
+	url = domain.NewURL("test", "unique")
 	err = r.Create(context.Background(), url)
 	if !errors.Is(err, repository.ErrNotUnique) {
 		t.Fatalf("not unique url: %v", err)
@@ -55,8 +55,11 @@ func TestGet(t *testing.T) {
 		t.Fatalf("New() unexpected error: %v", err)
 	}
 
-	url := domain.NewUrl("test", "t")
-	r.Create(context.Background(), url)
+	url := domain.NewURL("test", "t")
+	err = r.Create(context.Background(), url)
+	if err != nil {
+		t.Fatalf("Create() unexpected error: %v", err)
+	}
 
 	_, err = r.Get(context.Background(), url.Short)
 	if err != nil {
@@ -75,15 +78,18 @@ func TestGetByOriginal(t *testing.T) {
 		t.Fatalf("New() unexpected error: %v", err)
 	}
 
-	url := domain.NewUrl("test", "t")
-	r.Create(context.Background(), url)
-
-	_, err = r.GetByOriginalUrl(context.Background(), url.Original)
+	url := domain.NewURL("test", "t")
+	err = r.Create(context.Background(), url)
 	if err != nil {
-		t.Fatalf("GetByOriginalUrl() unexpected error: %v", err)
+		t.Fatalf("Create() unexpected error: %v", err)
 	}
 
-	_, err = r.GetByOriginalUrl(context.Background(), "not exists")
+	_, err = r.GetByOriginalURL(context.Background(), url.Original)
+	if err != nil {
+		t.Fatalf("GetByOriginalURL() unexpected error: %v", err)
+	}
+
+	_, err = r.GetByOriginalURL(context.Background(), "not exists")
 	if !errors.Is(err, repository.ErrNotFound) {
 		t.Fatalf("not found err: %v", err)
 	}
@@ -95,8 +101,11 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("New() unexpected error: %v", err)
 	}
 
-	url := domain.NewUrl("test", "t")
-	r.Create(context.Background(), url)
+	url := domain.NewURL("test", "t")
+	err = r.Create(context.Background(), url)
+	if err != nil {
+		t.Fatalf("Create() unexpected error: %v", err)
+	}
 
 	r.Delete(context.Background(), "t")
 

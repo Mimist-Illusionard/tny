@@ -47,7 +47,7 @@ func (r *MemRepository) Get(ctx context.Context, short string) (*domain.URL, err
 	return url, nil
 }
 
-func (r *MemRepository) GetByOriginalUrl(ctx context.Context, url string) (*domain.URL, error) {
+func (r *MemRepository) GetByOriginalURL(ctx context.Context, url string) (*domain.URL, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

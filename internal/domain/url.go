@@ -14,12 +14,12 @@ type URL struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
-// NewUrl creates url for future use
-func NewUrl(origURL, shortUrl string) *URL {
+// NewURL creates url for future use
+func NewURL(origURL, shortURL string) *URL {
 	return &URL{
 		ID:        uuid.New().String(),
 		Original:  origURL,
-		Short:     shortUrl,
+		Short:     shortURL,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(time.Hour),
 	}

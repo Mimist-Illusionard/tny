@@ -38,7 +38,10 @@ func (h *Handler) CreateShortLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(&u)
+	err = json.NewEncoder(w).Encode(&u)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *Handler) GetShortLink(w http.ResponseWriter, r *http.Request) {
