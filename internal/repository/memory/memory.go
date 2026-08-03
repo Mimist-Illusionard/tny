@@ -8,19 +8,19 @@ import (
 	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
 )
 
-type MemRepository struct {
+type MemoryRepository struct {
 	shortUrls map[string]*domain.URL
 	origUrls  map[string]string
 	mu        sync.RWMutex
 }
 
-func New() (*MemRepository, error) {
-	return &MemRepository{
+func New() (*MemoryRepository, error) {
+	return &MemoryRepository{
 		shortUrls: make(map[string]*domain.URL),
 		origUrls:  make(map[string]string)}, nil
 }
 
-func (r *MemRepository) Create(ctx context.Context, url *domain.URL) error {
+func (r *MemoryRepository) Create(ctx context.Context, url *domain.URL) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.shortUrls[url.Short]; ok {
@@ -37,7 +37,7 @@ func (r *MemRepository) Create(ctx context.Context, url *domain.URL) error {
 	return nil
 }
 
-func (r *MemRepository) Get(ctx context.Context, short string) (*domain.URL, error) {
+func (r *MemoryRepository) Get(ctx context.Context, short string) (*domain.URL, error) {
 	r.mu.RLock()
 	url, ok := r.shortUrls[short]
 	r.mu.RUnlock()
@@ -47,7 +47,7 @@ func (r *MemRepository) Get(ctx context.Context, short string) (*domain.URL, err
 	return url, nil
 }
 
-func (r *MemRepository) GetByOriginalURL(ctx context.Context, url string) (*domain.URL, error) {
+func (r *MemoryRepository) GetByOriginalURL(ctx context.Context, url string) (*domain.URL, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -59,12 +59,14 @@ func (r *MemRepository) GetByOriginalURL(ctx context.Context, url string) (*doma
 	return r.shortUrls[short], nil
 }
 
-func (r *MemRepository) Delete(ctx context.Context, short string) {
+func (r *MemoryRepository) Delete(ctx context.Context, short string) {
 	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	u := r.shortUrls[short]
+	u, ok := r.shortUrls[short]
+	if !ok {
+		return
+	}
 	delete(r.shortUrls, short)
 	delete(r.origUrls, u.Original)
-
-	r.mu.Unlock()
 }

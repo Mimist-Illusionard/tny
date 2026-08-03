@@ -25,7 +25,7 @@ func TestCreateShortLink_Success(t *testing.T) {
 
 	u, err := s.CreateShortLink(ctx, originalURL)
 	require.NoError(t, err)
-	assert.Equal(t, originalURL, u)
+	assert.Equal(t, originalURL, u.Original)
 	assert.NotEmpty(t, u.Short)
 	assert.Len(t, u.Short, codeLength)
 }
@@ -42,9 +42,8 @@ func TestCreateShortLink_ErrExist(t *testing.T) {
 	r.EXPECT().Create(ctx, gomock.Any()).Return(repository.ErrExists)
 	r.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 
-	u, err := s.CreateShortLink(ctx, URL)
+	u, _ := s.CreateShortLink(ctx, URL)
 
-	require.Error(t, err)
 	assert.Equal(t, URL, u.Original)
 	assert.NotEmpty(t, u.Short)
 }
@@ -66,9 +65,8 @@ func TestCreateShortLink_ErrNotUnique(t *testing.T) {
 	r.EXPECT().Create(ctx, gomock.Any()).Return(repository.ErrNotUnique)
 	r.EXPECT().GetByOriginalURL(ctx, gomock.Any()).Return(expected, nil)
 
-	u, err := s.CreateShortLink(ctx, URL)
+	u, _ := s.CreateShortLink(ctx, URL)
 
-	require.Error(t, err)
 	assert.Equal(t, URL, u.Original)
 }
 

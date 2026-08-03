@@ -2,118 +2,290 @@ package memory
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
 	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestCreate(t *testing.T) {
-	r, err := New()
-	if err != nil {
-		t.Fatalf("New() unexpected error: %v", err)
+func TestRepository_Create(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	t.Run("creates URL", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := New()
+		require.NoError(t, err)
+
+		want := domain.NewURL(
+			"https://example.com/page",
+			"abc123",
+		)
+
+		err = r.Create(ctx, want)
+		require.NoError(t, err)
+
+		gotByShort, err := r.Get(ctx, want.Short)
+		require.NoError(t, err)
+
+		assertURL(t, want, gotByShort)
+
+		gotByOriginal, err := r.GetByOriginalURL(ctx, want.Original)
+		require.NoError(t, err)
+
+		assertURL(t, want, gotByOriginal)
+	})
+
+	t.Run("returns ErrExists when the same URL already exists", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := New()
+		require.NoError(t, err)
+
+		url := domain.NewURL(
+			"https://example.com/page",
+			"abc123",
+		)
+
+		require.NoError(t, r.Create(ctx, url))
+
+		err = r.Create(ctx, url)
+
+		require.ErrorIs(t, err, repository.ErrExists)
+
+		got, getErr := r.Get(ctx, url.Short)
+		require.NoError(t, getErr)
+
+		assertURL(t, url, got)
+	})
+
+	t.Run("returns ErrNotUnique when original URL already exists", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := New()
+		require.NoError(t, err)
+
+		existingURL := domain.NewURL(
+			"https://example.com/page",
+			"abc123",
+		)
+
+		newURL := domain.NewURL(
+			existingURL.Original,
+			"different",
+		)
+
+		require.NoError(t, r.Create(ctx, existingURL))
+
+		err = r.Create(ctx, newURL)
+
+		require.ErrorIs(t, err, repository.ErrNotUnique)
+
+		got, getErr := r.GetByOriginalURL(ctx, existingURL.Original)
+		require.NoError(t, getErr)
+
+		assertURL(t, existingURL, got)
+
+		_, getErr = r.Get(ctx, newURL.Short)
+		require.ErrorIs(t, getErr, repository.ErrNotFound)
+	})
+}
+
+func TestRepository_Get(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		shortCode string
+		prepare   bool
+		wantErr   error
+	}{
+		{
+			name:      "returns existing URL",
+			shortCode: "abc123",
+			prepare:   true,
+		},
+		{
+			name:      "returns ErrNotFound for missing URL",
+			shortCode: "missing",
+			wantErr:   repository.ErrNotFound,
+		},
 	}
 
-	url := domain.NewURL("test", "t")
-	err = r.Create(context.Background(), url)
-	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
-	}
+	for _, tt := range tests {
+		tt := tt
 
-	err = r.Create(context.Background(), url)
-	if !errors.Is(err, repository.ErrExists) {
-		t.Fatalf("exist url: %v", err)
-	}
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	url = domain.NewURL("test", "unique")
-	err = r.Create(context.Background(), url)
-	if !errors.Is(err, repository.ErrNotUnique) {
-		t.Fatalf("not unique url: %v", err)
-	}
+			r, err := New()
+			require.NoError(t, err)
 
-	if len(r.shortUrls) < 1 {
-		t.Fatalf("short url len < 1: %v", r.shortUrls)
-	}
+			want := domain.NewURL(
+				"https://example.com/page",
+				"abc123",
+			)
 
-	if len(r.origUrls) < 1 {
-		t.Fatalf("short url len < 1: %v", r.shortUrls)
-	}
+			if tt.prepare {
+				require.NoError(t, r.Create(ctx, want))
+			}
 
-	if _, ok := r.shortUrls["t"]; !ok {
-		t.Fatalf("short url not created: %v", url)
-	}
+			got, err := r.Get(ctx, tt.shortCode)
 
-	if _, ok := r.origUrls[url.Original]; !ok {
-		t.Fatalf("original url not created: %v", url)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			assertURL(t, want, got)
+		})
 	}
 }
 
-func TestGet(t *testing.T) {
-	r, err := New()
-	if err != nil {
-		t.Fatalf("New() unexpected error: %v", err)
+func TestRepository_GetByOriginalURL(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	const existingOriginalURL = "https://example.com/page"
+
+	tests := []struct {
+		name        string
+		originalURL string
+		prepare     bool
+		wantErr     error
+	}{
+		{
+			name:        "returns existing URL",
+			originalURL: existingOriginalURL,
+			prepare:     true,
+		},
+		{
+			name:        "returns ErrNotFound for missing original URL",
+			originalURL: "https://missing.example.com/page",
+			wantErr:     repository.ErrNotFound,
+		},
 	}
 
-	url := domain.NewURL("test", "t")
-	err = r.Create(context.Background(), url)
-	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
-	}
+	for _, tt := range tests {
+		tt := tt
 
-	_, err = r.Get(context.Background(), url.Short)
-	if err != nil {
-		t.Fatalf("Get() unexpected error: %v", err)
-	}
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	_, err = r.Get(context.Background(), "not exists")
-	if !errors.Is(err, repository.ErrNotFound) {
-		t.Fatalf("not found err: %v", err)
+			r, err := New()
+			require.NoError(t, err)
+
+			want := domain.NewURL(
+				existingOriginalURL,
+				"abc123",
+			)
+
+			if tt.prepare {
+				require.NoError(t, r.Create(ctx, want))
+			}
+
+			got, err := r.GetByOriginalURL(ctx, tt.originalURL)
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			assertURL(t, want, got)
+		})
 	}
 }
 
-func TestGetByOriginal(t *testing.T) {
-	r, err := New()
-	if err != nil {
-		t.Fatalf("New() unexpected error: %v", err)
-	}
+func TestRepository_Delete(t *testing.T) {
+	t.Parallel()
 
-	url := domain.NewURL("test", "t")
-	err = r.Create(context.Background(), url)
-	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
-	}
+	ctx := context.Background()
 
-	_, err = r.GetByOriginalURL(context.Background(), url.Original)
-	if err != nil {
-		t.Fatalf("GetByOriginalURL() unexpected error: %v", err)
-	}
+	t.Run("deletes URL from both indexes", func(t *testing.T) {
+		t.Parallel()
 
-	_, err = r.GetByOriginalURL(context.Background(), "not exists")
-	if !errors.Is(err, repository.ErrNotFound) {
-		t.Fatalf("not found err: %v", err)
-	}
+		r, err := New()
+		require.NoError(t, err)
+
+		url := domain.NewURL(
+			"https://example.com/page",
+			"abc123",
+		)
+
+		require.NoError(t, r.Create(ctx, url))
+
+		r.Delete(ctx, url.Short)
+
+		_, err = r.Get(ctx, url.Short)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+
+		_, err = r.GetByOriginalURL(ctx, url.Original)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+	})
+
+	t.Run("allows creating URL again after deletion", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := New()
+		require.NoError(t, err)
+
+		url := domain.NewURL(
+			"https://example.com/page",
+			"abc123",
+		)
+
+		require.NoError(t, r.Create(ctx, url))
+
+		r.Delete(ctx, url.Short)
+
+		err = r.Create(ctx, url)
+		require.NoError(t, err)
+
+		got, err := r.Get(ctx, url.Short)
+		require.NoError(t, err)
+
+		assertURL(t, url, got)
+	})
+
+	t.Run("does nothing when URL does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := New()
+		require.NoError(t, err)
+
+		existingURL := domain.NewURL(
+			"https://example.com/page",
+			"abc123",
+		)
+
+		require.NoError(t, r.Create(ctx, existingURL))
+
+		r.Delete(ctx, "missing")
+
+		got, err := r.Get(ctx, existingURL.Short)
+		require.NoError(t, err)
+
+		assertURL(t, existingURL, got)
+	})
 }
 
-func TestDelete(t *testing.T) {
-	r, err := New()
-	if err != nil {
-		t.Fatalf("New() unexpected error: %v", err)
-	}
+func assertURL(t *testing.T, want, got *domain.URL) {
+	t.Helper()
 
-	url := domain.NewURL("test", "t")
-	err = r.Create(context.Background(), url)
-	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
-	}
+	require.NotNil(t, want)
+	require.NotNil(t, got)
 
-	r.Delete(context.Background(), "t")
-
-	if len(r.shortUrls) > 1 {
-		t.Fatalf("short url len > 1: %v", r.shortUrls)
-	}
-
-	if len(r.origUrls) > 1 {
-		t.Fatalf("orig url len > 1: %v", r.origUrls)
-	}
+	assert.Equal(t, want.Original, got.Original)
+	assert.Equal(t, want.Short, got.Short)
 }
