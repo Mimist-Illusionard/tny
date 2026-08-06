@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Mimist-Illusionard/url-shortener/internal/config"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func Connect(cfg *config.Config) (*sql.DB, error) {
