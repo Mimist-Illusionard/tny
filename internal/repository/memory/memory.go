@@ -14,10 +14,10 @@ type MemoryRepository struct {
 	mu        sync.RWMutex
 }
 
-func New() (*MemoryRepository, error) {
+func New() *MemoryRepository {
 	return &MemoryRepository{
 		shortUrls: make(map[string]*domain.URL),
-		origUrls:  make(map[string]string)}, nil
+		origUrls:  make(map[string]string)}
 }
 
 func (r *MemoryRepository) Create(ctx context.Context, url *domain.URL) error {
@@ -59,14 +59,17 @@ func (r *MemoryRepository) GetByOriginalURL(ctx context.Context, url string) (*d
 	return r.shortUrls[short], nil
 }
 
-func (r *MemoryRepository) Delete(ctx context.Context, short string) {
+func (r *MemoryRepository) Delete(ctx context.Context, short string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	u, ok := r.shortUrls[short]
 	if !ok {
-		return
+		return repository.ErrNotFound
 	}
+
 	delete(r.shortUrls, short)
 	delete(r.origUrls, u.Original)
+
+	return nil
 }

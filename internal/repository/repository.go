@@ -24,5 +24,5 @@ type Repository interface {
 	Create(ctx context.Context, url *domain.URL) error
 	Get(ctx context.Context, short string) (*domain.URL, error)
 	GetByOriginalURL(ctx context.Context, url string) (*domain.URL, error)
-	Delete(ctx context.Context, short string)
+	Delete(ctx context.Context, short string) error
 }

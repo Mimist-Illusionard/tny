@@ -2,14 +2,23 @@ package config
 
 type Database string
 
+type DatabaseParams struct {
+	Name     string
+	Host     string
+	Port     string
+	Username string
+	Password string
+}
+
 const (
 	Postgres Database = "postgres"
 	Memory   Database = "memory"
 )
 
 type Config struct {
-	DatabaseType Database
-	Port         string
+	DBType   Database
+	DBParams DatabaseParams
+	Port     string
 }
 
 func New(db, port string) *Config {
@@ -17,9 +26,9 @@ func New(db, port string) *Config {
 
 	switch db {
 	case "postgres":
-		cfg.DatabaseType = Postgres
+		cfg.DBType = Postgres
 	case "memory":
-		cfg.DatabaseType = Memory
+		cfg.DBType = Memory
 	}
 
 	return cfg

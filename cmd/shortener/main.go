@@ -15,6 +15,8 @@ var port string
 func main() {
 	flag.StringVar(&database, "database", "memory", "Database name")
 	flag.StringVar(&port, "port", "8082", "Application port")
+	flag.Parse()
+
 	cfg := config.New(database, port)
 
 	if err := app.Run(cfg); err != nil {
