@@ -19,7 +19,7 @@ func New(db *sql.DB) *PostgresRepository {
 
 func (r *PostgresRepository) Create(ctx context.Context, url *domain.URL) error {
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO urls (short, original, expiresAt) VALUES (?, ?, ?)`,
+		`INSERT INTO urls (short, original, expires_at) VALUES ($1,$2, $3)`,
 		url.Short, url.Original, url.ExpiresAt)
 
 	return err
@@ -29,7 +29,7 @@ func (r *PostgresRepository) Get(ctx context.Context, short string) (*domain.URL
 	url := &domain.URL{}
 
 	row := r.db.QueryRowContext(ctx,
-		`SELECT id, short, original, createdAt, expiresAt FROM urls WHERE short = ?`, short)
+		`SELECT id, short, original, created_at, expires_at FROM urls WHERE short = $1`, short)
 
 	err := row.Scan(&url.ID, &url.Short, &url.Original, &url.CreatedAt, &url.ExpiresAt)
 	if err != nil {
@@ -46,9 +46,9 @@ func (r *PostgresRepository) GetByOriginalURL(ctx context.Context, url string) (
 	u := &domain.URL{}
 
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, short, original, createdAt, expiresAt 
+		SELECT id, short, original, created_at, expires_at 
 		FROM urls 
-		WHERE original = ?`, url)
+		WHERE original = $1`, url)
 
 	err := row.Scan(&u.ID, &u.Short, &u.Original, &u.CreatedAt, &u.ExpiresAt)
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *PostgresRepository) GetByOriginalURL(ctx context.Context, url string) (
 }
 
 func (r *PostgresRepository) Delete(ctx context.Context, short string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM urls WHERE short = ?`, short)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM urls WHERE short = $1`, short)
 
 	return err
 }

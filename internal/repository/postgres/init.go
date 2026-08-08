@@ -26,7 +26,16 @@ func Connect(cfg *config.Config) (*sql.DB, error) {
 		return nil, err
 	}
 
-	err = RunMigration(dsn)
+	migrtDSN := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DBParams.Username,
+		cfg.DBParams.Password,
+		cfg.DBParams.Host,
+		cfg.DBParams.Port,
+		cfg.DBParams.Name,
+	)
+
+	err = RunMigration(migrtDSN)
 	if err != nil {
 		return nil, err
 	}
