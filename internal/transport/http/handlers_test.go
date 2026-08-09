@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
-	"github.com/Mimist-Illusionard/url-shortener/internal/service"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

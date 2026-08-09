@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

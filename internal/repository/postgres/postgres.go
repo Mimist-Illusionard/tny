@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 

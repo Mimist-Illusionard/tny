@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
 )
 
 var (

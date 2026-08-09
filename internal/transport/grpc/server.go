@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	urlgrpc "github.com/Mimist-Illusionard/url-shortener/api/v1/grpc"
+	urlgrpc "github.com/Mimist-Illusionard/tny/api/v1/grpc"
 	googlegrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

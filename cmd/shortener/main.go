@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/app"
-	"github.com/Mimist-Illusionard/url-shortener/internal/config"
+	"github.com/Mimist-Illusionard/tny/internal/app"
+	"github.com/Mimist-Illusionard/tny/internal/config"
 )
 
 var database string

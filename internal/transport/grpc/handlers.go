@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	urlgrpc "github.com/Mimist-Illusionard/url-shortener/api/v1/grpc"
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
-	"github.com/Mimist-Illusionard/url-shortener/internal/service"
+	urlgrpc "github.com/Mimist-Illusionard/tny/api/v1/grpc"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

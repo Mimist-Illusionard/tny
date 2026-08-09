@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
 )
 
 var (

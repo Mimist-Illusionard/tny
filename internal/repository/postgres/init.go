@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/config"
+	"github.com/Mimist-Illusionard/tny/internal/config"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )

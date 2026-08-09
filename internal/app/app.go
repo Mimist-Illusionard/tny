@@ -6,13 +6,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/config"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository/memory"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository/postgres"
-	"github.com/Mimist-Illusionard/url-shortener/internal/service"
-	grpctransport "github.com/Mimist-Illusionard/url-shortener/internal/transport/grpc"
-	httptransport "github.com/Mimist-Illusionard/url-shortener/internal/transport/http"
+	"github.com/Mimist-Illusionard/tny/internal/config"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/repository/memory"
+	"github.com/Mimist-Illusionard/tny/internal/repository/postgres"
+	"github.com/Mimist-Illusionard/tny/internal/service"
+	grpctransport "github.com/Mimist-Illusionard/tny/internal/transport/grpc"
+	httptransport "github.com/Mimist-Illusionard/tny/internal/transport/http"
 )
 
 type closeFunc func() error

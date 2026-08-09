@@ -6,9 +6,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
-	"github.com/Mimist-Illusionard/url-shortener/internal/service"
+	"github.com/Mimist-Illusionard/tny/internal/domain"
+	"github.com/Mimist-Illusionard/tny/internal/repository"
+	"github.com/Mimist-Illusionard/tny/internal/service"
 )
 
 const maxRequestBodySize = 1 << 20

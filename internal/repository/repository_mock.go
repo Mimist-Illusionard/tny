@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	domain "github.com/Mimist-Illusionard/url-shortener/internal/domain"
+	domain "github.com/Mimist-Illusionard/tny/internal/domain"
 	gomock "github.com/golang/mock/gomock"
 )
 

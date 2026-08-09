@@ -1,4 +1,4 @@
-module github.com/Mimist-Illusionard/url-shortener
+module github.com/Mimist-Illusionard/tny
 
 go 1.26.1
 
