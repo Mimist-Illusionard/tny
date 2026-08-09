@@ -1,7 +1,8 @@
 package config
 
 import (
-	"log"
+	"fmt"
+	"strings"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
@@ -25,34 +26,65 @@ const (
 type Config struct {
 	DBType   Database
 	DBParams DatabaseParams
-	Port     string
+	HTTPPort string
+	GRPCPort string
 }
 
-func New(db, port, envPath string) *Config {
-	cfg := &Config{Port: port}
-
+func New(db, httpPort, grpcPort, envPath string) (*Config, error) {
 	if envPath != "" {
-		err := godotenv.Load(envPath)
-		if err != nil {
-			log.Fatalf("Error loading .env file")
+		if err := godotenv.Load(envPath); err != nil {
+			return nil, fmt.Errorf("load env file %q: %w", envPath, err)
 		}
-
-		params := DatabaseParams{}
-		err = env.Parse(&params)
-		if err != nil {
-			log.Fatalf("Error parsing .env file")
-		}
-
-		cfg.DBParams = params
-		log.Println(cfg.DBParams)
 	}
 
-	switch db {
-	case "postgres":
+	params := DatabaseParams{}
+	if err := env.Parse(&params); err != nil {
+		return nil, fmt.Errorf("parse database environment: %w", err)
+	}
+
+	cfg := &Config{
+		DBParams: params,
+		HTTPPort: httpPort,
+		GRPCPort: grpcPort,
+	}
+
+	switch Database(db) {
+	case Postgres:
 		cfg.DBType = Postgres
-	case "memory":
+		if err := validatePostgresParams(params); err != nil {
+			return nil, err
+		}
+	case Memory:
 		cfg.DBType = Memory
+	default:
+		return nil, fmt.Errorf("unsupported database %q", db)
 	}
 
-	return cfg
+	return cfg, nil
+}
+
+func validatePostgresParams(params DatabaseParams) error {
+	missing := make([]string, 0, 5)
+
+	if params.Name == "" {
+		missing = append(missing, "DB_NAME")
+	}
+	if params.Host == "" {
+		missing = append(missing, "DB_HOST")
+	}
+	if params.Port == "" {
+		missing = append(missing, "DB_PORT")
+	}
+	if params.Username == "" {
+		missing = append(missing, "DB_USERNAME")
+	}
+	if params.Password == "" {
+		missing = append(missing, "DB_PASSWORD")
+	}
+
+	if len(missing) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("missing PostgreSQL environment variables: %s", strings.Join(missing, ", "))
 }

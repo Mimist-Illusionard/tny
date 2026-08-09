@@ -2,37 +2,47 @@ package http
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
-	"os/signal"
-	"syscall"
 	"time"
-
-	"github.com/Mimist-Illusionard/url-shortener/internal/config"
-	"github.com/Mimist-Illusionard/url-shortener/internal/repository"
-	"github.com/Mimist-Illusionard/url-shortener/internal/service"
 )
 
-func Serve(cfg *config.Config, r repository.Repository) error {
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+const shutdownTimeout = 5 * time.Second
 
-	s := &http.Server{
-		Addr:         ":" + cfg.Port,
-		IdleTimeout:  time.Second * 60,
-		ReadTimeout:  time.Second * 5,
-		WriteTimeout: time.Second * 5,
-		Handler:      RegisterHandlers(service.NewService(r)),
+func Serve(ctx context.Context, port string, service Shortener) error {
+	server := &http.Server{
+		Addr:              ":" + port,
+		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		Handler:           RegisterHandlers(service),
 	}
 
+	errCh := make(chan error, 1)
 	go func() {
-		<-ctx.Done()
-		err := s.Shutdown(context.Background())
-		if err != nil {
-			log.Printf("Shutdown() failed: %v", err)
+		log.Printf("http server listening on %s", server.Addr)
+		err := server.ListenAndServe()
+		if errors.Is(err, http.ErrServerClosed) {
+			err = nil
 		}
+		errCh <- err
 	}()
 
-	log.Printf("http server listening on port %s", cfg.Port)
-	return s.ListenAndServe()
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			_ = server.Close()
+			return fmt.Errorf("shutdown http server: %w", err)
+		}
+
+		return <-errCh
+	}
 }

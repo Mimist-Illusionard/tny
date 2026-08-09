@@ -18,8 +18,7 @@ func TestRepository_Create(t *testing.T) {
 	t.Run("creates URL", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := New()
-		require.NoError(t, err)
+		r := New()
 
 		want := domain.NewURL(
 			"https://example.com/page",
@@ -43,8 +42,7 @@ func TestRepository_Create(t *testing.T) {
 	t.Run("returns ErrExists when the same URL already exists", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := New()
-		require.NoError(t, err)
+		r := New()
 
 		url := domain.NewURL(
 			"https://example.com/page",
@@ -66,8 +64,7 @@ func TestRepository_Create(t *testing.T) {
 	t.Run("returns ErrNotUnique when original URL already exists", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := New()
-		require.NoError(t, err)
+		r := New()
 
 		existingURL := domain.NewURL(
 			"https://example.com/page",
@@ -124,8 +121,7 @@ func TestRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			r, err := New()
-			require.NoError(t, err)
+			r := New()
 
 			want := domain.NewURL(
 				"https://example.com/page",
@@ -181,8 +177,7 @@ func TestRepository_GetByOriginalURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			r, err := New()
-			require.NoError(t, err)
+			r := New()
 
 			want := domain.NewURL(
 				existingOriginalURL,
@@ -215,8 +210,7 @@ func TestRepository_Delete(t *testing.T) {
 	t.Run("deletes URL from both indexes", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := New()
-		require.NoError(t, err)
+		r := New()
 
 		url := domain.NewURL(
 			"https://example.com/page",
@@ -237,8 +231,7 @@ func TestRepository_Delete(t *testing.T) {
 	t.Run("allows creating URL again after deletion", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := New()
-		require.NoError(t, err)
+		r := New()
 
 		url := domain.NewURL(
 			"https://example.com/page",
@@ -261,8 +254,7 @@ func TestRepository_Delete(t *testing.T) {
 	t.Run("does nothing when URL does not exist", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := New()
-		require.NoError(t, err)
+		r := New()
 
 		existingURL := domain.NewURL(
 			"https://example.com/page",

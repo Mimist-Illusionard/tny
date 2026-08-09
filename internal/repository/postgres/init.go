@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/Mimist-Illusionard/url-shortener/internal/config"
 
@@ -17,16 +18,20 @@ func Connect(cfg *config.Config) (*sql.DB, error) {
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open postgres: %w", err)
 	}
 
-	db.SetMaxOpenConns(10)
-	err = db.Ping()
-	if err != nil {
-		return nil, err
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxIdleTime(5 * time.Minute)
+	db.SetConnMaxLifetime(30 * time.Minute)
+
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
 
-	migrtDSN := fmt.Sprintf(
+	migrationDSN := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.DBParams.Username,
 		cfg.DBParams.Password,
@@ -35,8 +40,8 @@ func Connect(cfg *config.Config) (*sql.DB, error) {
 		cfg.DBParams.Name,
 	)
 
-	err = RunMigration(migrtDSN)
-	if err != nil {
+	if err := RunMigration(migrationDSN); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 

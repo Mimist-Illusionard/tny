@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Mimist-Illusionard/url-shortener/internal/domain"
@@ -12,147 +13,170 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateShortLink_Success(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestService_CreateShortLink(t *testing.T) {
+	t.Parallel()
 
-	r := repository.NewMockRepository(ctrl)
-	s := NewService(r)
-	originalURL := "https://example.com"
-	ctx := context.Background()
+	const originalURL = "https://example.com/page"
 
-	r.EXPECT().Create(ctx, gomock.Any()).Return(nil)
-
-	u, err := s.CreateShortLink(ctx, originalURL)
-	require.NoError(t, err)
-	assert.Equal(t, originalURL, u.Original)
-	assert.NotEmpty(t, u.Short)
-	assert.Len(t, u.Short, codeLength)
-}
-
-func TestCreateShortLink_ErrExist(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	r := repository.NewMockRepository(ctrl)
-	s := NewService(r)
-	URL := "https://example.com"
-	ctx := context.Background()
-
-	r.EXPECT().Create(ctx, gomock.Any()).Return(repository.ErrExists)
-	r.EXPECT().Create(ctx, gomock.Any()).Return(nil)
-
-	u, _ := s.CreateShortLink(ctx, URL)
-
-	assert.Equal(t, URL, u.Original)
-	assert.NotEmpty(t, u.Short)
-}
-
-func TestCreateShortLink_ErrNotUnique(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	r := repository.NewMockRepository(ctrl)
-	s := NewService(r)
-	URL := "https://example.com"
-	ctx := context.Background()
-
-	expected := &domain.URL{
-		Original: URL,
-		Short:    "123",
+	tests := []struct {
+		name      string
+		prepare   func(*repository.MockRepository)
+		want      *domain.URL
+		wantError error
+	}{
+		{
+			name: "creates a short link",
+			prepare: func(r *repository.MockRepository) {
+				r.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name: "retries when generated short code collides",
+			prepare: func(r *repository.MockRepository) {
+				gomock.InOrder(
+					r.EXPECT().Create(gomock.Any(), gomock.Any()).Return(repository.ErrExists),
+					r.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil),
+				)
+			},
+		},
+		{
+			name: "returns existing link for the same original URL",
+			prepare: func(r *repository.MockRepository) {
+				existing := &domain.URL{Original: originalURL, Short: "Abcdef123_"}
+				r.EXPECT().Create(gomock.Any(), gomock.Any()).Return(repository.ErrNotUnique)
+				r.EXPECT().GetByOriginalURL(gomock.Any(), originalURL).Return(existing, nil)
+			},
+			want: &domain.URL{Original: originalURL, Short: "Abcdef123_"},
+		},
+		{
+			name: "returns repository error",
+			prepare: func(r *repository.MockRepository) {
+				r.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("database error"))
+			},
+			wantError: errors.New("database error"),
+		},
+		{
+			name: "returns ErrCannotGenerate after all collisions",
+			prepare: func(r *repository.MockRepository) {
+				r.EXPECT().Create(gomock.Any(), gomock.Any()).Return(repository.ErrExists).Times(maxAttempts)
+			},
+			wantError: ErrCannotGenerate,
+		},
 	}
 
-	r.EXPECT().Create(ctx, gomock.Any()).Return(repository.ErrNotUnique)
-	r.EXPECT().GetByOriginalURL(ctx, gomock.Any()).Return(expected, nil)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	u, _ := s.CreateShortLink(ctx, URL)
+			ctrl := gomock.NewController(t)
+			r := repository.NewMockRepository(ctrl)
+			tt.prepare(r)
 
-	assert.Equal(t, URL, u.Original)
-}
+			s := NewService(r)
+			got, err := s.CreateShortLink(context.Background(), originalURL)
 
-func TestCreateShortLink_UnexpectedError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+			if tt.wantError != nil {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantError.Error(), err.Error())
+				assert.Nil(t, got)
+				return
+			}
 
-	r := repository.NewMockRepository(ctrl)
-	s := NewService(r)
-	ctx := context.Background()
-	URL := "https://example.com"
-
-	unexpectedErr := errors.New("unexpected error")
-
-	r.EXPECT().
-		Create(ctx, gomock.Any()).
-		Return(unexpectedErr)
-
-	result, err := s.CreateShortLink(ctx, URL)
-
-	assert.Error(t, err)
-	assert.Equal(t, unexpectedErr, err)
-	assert.Nil(t, result)
-}
-
-func TestGetOriginalLink_NotFound(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	r := repository.NewMockRepository(ctrl)
-	s := NewService(r)
-	ctx := context.Background()
-	shortCode := "nonexistent"
-
-	r.EXPECT().
-		Get(ctx, shortCode).
-		Return(nil, repository.ErrNotFound)
-
-	result, err := s.GetOriginalLink(ctx, shortCode)
-
-	assert.Error(t, err)
-	assert.Equal(t, repository.ErrNotFound, err)
-	assert.Empty(t, result)
-}
-
-func TestGetOriginalLink_UnexpectedError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	r := repository.NewMockRepository(ctrl)
-	s := NewService(r)
-	ctx := context.Background()
-	short := "abc123"
-
-	unexpectedErr := errors.New("database error")
-
-	r.EXPECT().
-		Get(ctx, short).
-		Return(nil, unexpectedErr)
-
-	result, err := s.GetOriginalLink(ctx, short)
-
-	assert.Error(t, err)
-	assert.Equal(t, unexpectedErr, err)
-	assert.Empty(t, result)
-}
-
-func TestGenerateShort_Success(t *testing.T) {
-	length := 10
-
-	result, err := generateShort(length)
-
-	require.NoError(t, err)
-	assert.Len(t, result, length)
-
-	for _, char := range result {
-		assert.Contains(t, alphabet, string(char))
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			assert.Equal(t, originalURL, got.Original)
+			assert.Len(t, got.Short, codeLength)
+			if tt.want != nil {
+				assert.Equal(t, tt.want.Short, got.Short)
+			}
+		})
 	}
 }
 
-func TestGenerateShort_Length(t *testing.T) {
-	l := 0
+func TestService_CreateShortLink_RejectsInvalidURL(t *testing.T) {
+	t.Parallel()
 
-	result, err := generateShort(l)
+	ctrl := gomock.NewController(t)
+	r := repository.NewMockRepository(ctrl)
+	s := NewService(r)
 
-	assert.Error(t, err)
-	assert.Empty(t, result)
-	assert.Contains(t, err.Error(), "length must be positive")
+	for _, value := range []string{"", "example.com", "ftp://example.com", " https://example.com", "https://example.com/a b", "https://example.com/" + strings.Repeat("a", maxOriginalURLLength)} {
+		value := value
+		t.Run(value, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := s.CreateShortLink(context.Background(), value)
+			require.ErrorIs(t, err, ErrInvalidURL)
+			assert.Nil(t, got)
+		})
+	}
+}
+
+func TestService_GetOriginalLink(t *testing.T) {
+	t.Parallel()
+
+	const (
+		short       = "Abcdef123_"
+		originalURL = "https://example.com/page"
+	)
+
+	t.Run("returns original URL", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		r := repository.NewMockRepository(ctrl)
+		r.EXPECT().Get(gomock.Any(), short).Return(&domain.URL{Original: originalURL, Short: short}, nil)
+
+		got, err := NewService(r).GetOriginalLink(context.Background(), short)
+		require.NoError(t, err)
+		assert.Equal(t, originalURL, got)
+	})
+
+	t.Run("returns ErrNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		r := repository.NewMockRepository(ctrl)
+		r.EXPECT().Get(gomock.Any(), short).Return(nil, repository.ErrNotFound)
+
+		got, err := NewService(r).GetOriginalLink(context.Background(), short)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+		assert.Empty(t, got)
+	})
+
+	t.Run("rejects invalid short code", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		r := repository.NewMockRepository(ctrl)
+
+		got, err := NewService(r).GetOriginalLink(context.Background(), "too-short")
+		require.ErrorIs(t, err, ErrInvalidShortCode)
+		assert.Empty(t, got)
+	})
+}
+
+func TestGenerateShort(t *testing.T) {
+	t.Parallel()
+
+	t.Run("uses requested length and alphabet", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := generateShort(codeLength)
+		require.NoError(t, err)
+		assert.Len(t, result, codeLength)
+
+		for _, char := range result {
+			assert.Contains(t, alphabet, string(char))
+		}
+	})
+
+	t.Run("rejects non-positive length", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := generateShort(0)
+		require.Error(t, err)
+		assert.Empty(t, result)
+	})
 }

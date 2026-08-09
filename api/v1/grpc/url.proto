@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package shortener.v1;
+
+option go_package = "github.com/Mimist-Illusionard/url-shortener/api/v1/grpc;urlgrpc";
+
+service URLShortener {
+  rpc CreateShortLink(CreateShortLinkRequest) returns (CreateShortLinkResponse);
+  rpc GetOriginalLink(GetOriginalLinkRequest) returns (GetOriginalLinkResponse);
+}
+
+message CreateShortLinkRequest {
+  string original_url = 1;
+}
+
+message CreateShortLinkResponse {
+  string id = 1;
+  string short_code = 2;
+  string original_url = 3;
+}
+
+message GetOriginalLinkRequest {
+  string short_code = 1;
+}
+
+message GetOriginalLinkResponse {
+  string original_url = 1;
+}
